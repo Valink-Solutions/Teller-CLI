@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import base64
 
 import httpx
 
@@ -38,7 +39,30 @@ def get_world(token: str, url: str, world_name: str):
     world_id = data.get("key")
         
     return world_id
+
+def encode_image(image_path: str):
+
+    # Read the contents of the PNG file into a bytes object
+    with open(image_path, 'rb') as f:
+        image_bytes = f.read()
+
+    # Encode the image bytes as Base64 using the standard Base64 alphabet and no line breaks
+    base64_str = base64.b64encode(image_bytes).decode('ascii')
+
+    # Create a data URI using the Base64-encoded string and the PNG media type
+    data_uri = f'data:image/png;base64,{base64_str}'
     
+    return data_uri
+
+def update_world_image(folder_path: str, world_id: str, url: str, token: str):
+    
+    icon_path = os.path.join(folder_path, "icon.png")
+    
+    response = httpx.patch(url=f"{url}/worlds/{world_id}", headers={"X-Space-App-Key": token, "Content-Type": "application/json"}, json={
+        "image": encode_image(icon_path)
+    })
+    
+    response.raise_for_status()
 
 def create_world(token: str, url: str, world_name: str, world_size: int):
     
@@ -55,103 +79,10 @@ def create_world(token: str, url: str, world_name: str, world_size: int):
     
     return world_id
 
-# def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
-    
-#     client = httpx.Client()
-    
-#     # Set the chunk size in bytes
-#     chunk_size = 2048 * 1024
-    
-#     current_chunk = 0
-    
-#     if "/" in file_path:
-#         name = file_path.split("/")
-#     else:
-#         name = file_path
-
-#     # Open the file and read the total size
-#     with open(file_path, "rb") as file:
-#         session_id = None
-#         total_size = len(file.read())
-#         file.seek(current_chunk)
-#         while True:
-
-#             # If this is the first chunk, create a new upload session
-#             if session_id is None:
-#                 # Read the next chunk of data
-#                 chunk = file.read(chunk_size)
-
-#                 # If there is no more data, break out of the loop
-#                 if not chunk:
-#                     break
-                
-#                 print(f"\nCurrent range: {current_chunk}-{current_chunk+chunk_size-1}/{total_size}\n")
-                
-#                 headers = {
-#                     "world-id": world_id,
-#                     "file-name": name,
-#                     "X-Space-App-Key": token,
-#                     "content-range": f"bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}"
-#                 }
-#                 files = {"file": chunk}
-#                 response = client.post(f"{url}/snapshots/", headers=headers, files=files)
-                
-#                 if not response.status_code == 200:
-#                     raise Exception
-                
-#                 session_id = response.json()["session_id"]
-#                 current_chunk += chunk_size
-#                 time.sleep(1)
-#             else:
-#                 # Read the next chunk of data
-#                 chunk = file.read(chunk_size)
-
-#                 # If there is no more data, break out of the loop
-#                 if not chunk:
-#                     break
-                
-#                 print("session_id call")
-#                 print(f"\nCurrent range: {current_chunk}-{current_chunk+chunk_size-1}/{total_size}\n")
-#                 success = False
-#                 while not success:
-#                     try:
-#                         headers = {
-#                             "world-id": world_id,
-#                             "file-name": name,
-#                             "session-id": session_id,
-#                             "X-Space-App-Key": token,
-#                             "content-range": f"bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}"
-#                         }
-#                         files = {"file": chunk}
-#                         session_response = client.post(f"{url}/snapshots/", headers=headers, files=files)
-                        
-#                         if not session_response.status_code == 200:
-#                             print("\n\n IM BROKEN (SECOND UPLOAD) \n\n")
-#                             print(session_response.text)
-                        
-#                             if session_response.status_code == 208:
-#                                 continue
-                        
-#                             if session_response.json()["finsihed"] == False:
-#                                 break
-                            
-#                             raise Exception
-                        
-#                         if session_response.json()["finsihed"] == True:
-#                             success = True
-                        
-#                         session_id = session_response.json()["session_id"] # update session_id after successful upload
-#                         current_chunk += chunk_size
-#                         time.sleep(1)
-#                     except:
-#                         # Wait for a short time before retrying
-#                         time.sleep(1)
-#                         pass
-
 
 def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     
-    chunk_size = 2048 * 1024
+    chunk_size = 4096 * 1024
     
     current_chunk = 0
     
@@ -161,26 +92,32 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     
     file_name = os.path.basename(file_path)
     
-    with open(file_path, "rb") as f:
-        chunk = f.read(chunk_size)
+    session_response = client.post(f"{url}/snapshots/upload", params={"file_name": file_name, "world_id": world_id}, headers={"X-Space-App-Key": token})
+    
+    session_response.raise_for_status()
+    
+    session_id = session_response.json()["session_id"]
+    
+    # with open(file_path, "rb") as f:
+    #     chunk = f.read(chunk_size)
             
-        print(f"\n\n content-range: bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}")
+    #     print(f"\n\n content-range: bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}")
         
-        headers = {
-            "world-id": world_id,
-            "file-name": file_name,
-            "X-Space-App-Key": token,
-            "content-range": f"bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}"
-        }
+    #     headers = {
+    #         "world-id": world_id,
+    #         "file-name": file_name,
+    #         "X-Space-App-Key": token,
+    #         "content-range": f"bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}"
+    #     }
         
-        initial_response = client.post(url=f"{url}/snapshots/", headers=headers, files={"file": chunk})
+    #     initial_response = client.post(url=f"{url}/snapshots/", headers=headers, files={"file": chunk})
         
-        if not initial_response.status_code == 200:
-            raise Exception
+    #     if not initial_response.status_code == 200:
+    #         raise Exception
         
-        session_id = initial_response.json()["session_id"]
+    #     session_id = initial_response.json()["session_id"]
         
-        current_chunk += chunk_size
+    #     current_chunk += chunk_size
         
     finished = False
     with open(file_path, "rb") as f:
@@ -191,14 +128,15 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
             print(f"\n\n content-range: bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}")
         
             headers = {
-                "world-id": world_id,
-                "file-name": file_name,
-                "session-id": session_id,
                 "X-Space-App-Key": token,
                 "content-range": f"bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}"
             }
             
-            looped_response = client.post(url=f"{url}/snapshots/", headers=headers, files={"file": chunk})
+            params = {
+                "file_name": file_name
+            }
+            
+            looped_response = client.post(url=f"{url}/snapshots/upload/{session_id}", params=params, headers=headers, files={"file": chunk})
             
             if looped_response.status_code == 208:
                 continue
@@ -212,8 +150,6 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
             
             if current_chunk >= total_size:
                 finished = True
-    
-    os.remove(file_path)
             
             
                 

@@ -2,3 +2,4 @@
 /.venv
 .env
 teller.toml
+*.zip
