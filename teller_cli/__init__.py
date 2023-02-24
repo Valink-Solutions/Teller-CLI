@@ -22,6 +22,7 @@ def upload(folder_path: str = typer.Argument(...)):
     
     if not world_id:
         world_id = create_world(api_token, api_url, name, size)
+        
     try:
         update_world_image(folder_path, world_id, api_url, api_token)
     except Exception as e:
@@ -34,3 +35,10 @@ def upload(folder_path: str = typer.Argument(...)):
     except Exception as e:
         print(e)
         print("Error uploading snapshot of world!")
+        
+@app.command()
+def config():
+    print("not added yet!")
+    pass
+        
+__version__ = "0.2.0"

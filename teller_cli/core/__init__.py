@@ -3,7 +3,21 @@ import shutil
 import time
 import base64
 
+from rich.console import Console
+from rich.table import Table
+from rich.progress import Progress
+
 import httpx
+
+def format_bytes(bytes: int) -> str:
+    if bytes < 1024:
+        return f"{bytes} bytes"
+    elif bytes < 1048576:
+        return f"{bytes / 1024:.2f} KB"
+    elif bytes < 1073741824:
+        return f"{bytes / 1048576:.2f} MB"
+    else:
+        return f"{bytes / 1073741824:.2f} GB"
 
 def get_folder_size(folder_path):
     total_size = 0
@@ -82,7 +96,7 @@ def create_world(token: str, url: str, world_name: str, world_size: int):
 
 def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     
-    chunk_size = 4096 * 1024
+    chunk_size = 4194304 # 4mb LIMIT! ANY HIGHER CHUNKVAULT-LITE WILL THROW ERRORS!
     
     current_chunk = 0
     
@@ -97,59 +111,68 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     session_response.raise_for_status()
     
     session_id = session_response.json()["session_id"]
+        
+    failed = 0    
     
-    # with open(file_path, "rb") as f:
-    #     chunk = f.read(chunk_size)
-            
-    #     print(f"\n\n content-range: bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}")
-        
-    #     headers = {
-    #         "world-id": world_id,
-    #         "file-name": file_name,
-    #         "X-Space-App-Key": token,
-    #         "content-range": f"bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}"
-    #     }
-        
-    #     initial_response = client.post(url=f"{url}/snapshots/", headers=headers, files={"file": chunk})
-        
-    #     if not initial_response.status_code == 200:
-    #         raise Exception
-        
-    #     session_id = initial_response.json()["session_id"]
-        
-    #     current_chunk += chunk_size
-        
     finished = False
-    with open(file_path, "rb") as f:
-        while finished == False:
-            f.seek(current_chunk)
-            chunk = f.read(chunk_size)
-            
-            print(f"\n\n content-range: bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}")
+    
+    file_table = Table(title="[bold]ChunkVault-[bold purple]Lite [white]Upload", min_width=200)
+    file_table.add_column("World ID", justify="left", style="cyan", no_wrap=True)
+    file_table.add_column("Session ID", justify="left", style="cyan", no_wrap=True)
+    file_table.add_column("Size", no_wrap=True)
+    file_table.add_column("Name")
+    
+    progress = Progress(expand=True)
+    
+    file_table.add_row(world_id, session_id, format_bytes(total_size), file_name)
+    
+    console = Console()
+    console.print(file_table)
+    
+    with progress:
         
-            headers = {
-                "X-Space-App-Key": token,
-                "content-range": f"bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}"
-            }
-            
-            params = {
-                "file_name": file_name
-            }
-            
-            looped_response = client.post(url=f"{url}/snapshots/upload/{session_id}", params=params, headers=headers, files={"file": chunk})
-            
-            if looped_response.status_code == 208:
-                continue
+        upload_task = progress.add_task("[cyan]Uploading...", total=total_size)
+        
+        with open(file_path, "rb") as f:
+            while finished == False:
                 
-            if not looped_response.status_code == 200:
-                raise Exception
+                if failed >= 3:
+                    raise Exception
+                
+                f.seek(current_chunk)
+                chunk = f.read(chunk_size)
+                
+                # print(f"\n\n content-range: bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}")
             
-            finished = looped_response.json()["finished"]
-            
-            current_chunk += chunk_size
-            
-            if current_chunk >= total_size:
-                finished = True
+                headers = {
+                    "X-Space-App-Key": token,
+                    "content-range": f"bytes {current_chunk}-{current_chunk+chunk_size-1}/{total_size}"
+                }
+                
+                params = {
+                    "file_name": file_name
+                }
+                
+                looped_response = client.post(url=f"{url}/snapshots/upload/{session_id}", params=params, headers=headers, files={"file": chunk})
+                
+                if looped_response.status_code == 208:
+                    current_chunk += chunk_size
+                    continue
+                    
+                if not looped_response.status_code == 200:
+                    f.seek(-chunk_size)
+                    failed += 1
+                    continue
+                
+                finished = looped_response.json()["finished"]
+                
+                current_chunk += chunk_size
+                
+                progress.update(upload_task, advance=chunk_size)
+                
+                if current_chunk >= total_size:
+                    progress.update(upload_task, description="[green]Uploaded.")
+                    finished = True
             
             
                 

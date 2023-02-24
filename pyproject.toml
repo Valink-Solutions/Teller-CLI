@@ -1,16 +1,19 @@
 [tool.poetry]
 name = "teller-cli"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["JakePIXL <jakewjevans@gmail.com>"]
 readme = "README.md"
 packages = [{include = "teller_cli"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 typer = {extras = ["all"], version = "^0.7.0"}
 httpx = "^0.23.3"
 keyring = "^23.13.1"
+
+[tool.poetry.scripts]
+teller-cli = "teller_cli:app"
 
 
 [build-system]
