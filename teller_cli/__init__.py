@@ -2,19 +2,12 @@ import os
 from typing import Union
 import typer
 
-from teller_cli.core import (
-    chunk_and_upload,
-    compress_folder,
-    create_world,
-    get_world,
-    update_world_image,
-)
 from teller_cli.core.config import create_or_load_config_file
 from teller_cli.core.utils import check_for_shared_url
 from teller_cli.core.world import (
-    chunk_and_upload_v2,
-    compress_folder_v2,
-    create_world_v2,
+    chunk_and_upload,
+    compress_folder,
+    create_world,
     expand_downloaded,
     get_deep_info,
     get_info,
@@ -28,37 +21,13 @@ from teller_cli.core.world import download
 app = typer.Typer()
 
 
-@app.command()
-def upload(folder_path: str = typer.Argument(...)):
-    api_url, api_token, _ = create_or_load_config_file("teller.toml")
-
-    try:
-        file, size, name = compress_folder(folder_path)
-    except Exception as e:
-        print("Error Compressing and finding Folder\n\n")
-        print(e)
-        exit()
-
-    world_id = get_world(api_token, api_url, name)
-
-    if not world_id:
-        world_id = create_world(api_token, api_url, name, size)
-
-    try:
-        update_world_image(folder_path, world_id, api_url, api_token)
-    except Exception as e:
-        print(e)
-        print("Error updating world icon")
-
-    try:
-        chunk_and_upload(file, world_id, api_url, api_token)
-        os.remove(file)
-    except Exception as e:
-        print(e)
-        print("Error uploading snapshot of world!")
-
-
-@app.command(name="uploadV2")
+@app.command(
+    name="upload",
+    help="""
+Takes a world's folder name or an absolute path to a world,
+compresses and uploads it to ChunkVault-Lite.
+""",
+)
 def upload_v2(folder_path: str = typer.Argument(...)):
     api_url, api_token, default_saves_folder = create_or_load_config_file("teller.toml")
 
@@ -74,14 +43,14 @@ def upload_v2(folder_path: str = typer.Argument(...)):
     world_id = grab_world(api_token, api_url, vault_id)
 
     if not world_id:
-        world_id = create_world_v2(api_token, api_url, folder_path)
+        world_id = create_world(api_token, api_url, folder_path)
     try:
-        zip_file = compress_folder_v2(folder_path)
+        zip_file = compress_folder(folder_path)
     except Exception:
         print("> [bold red]Error compressing world.")
 
     try:
-        chunk_and_upload_v2(zip_file, world_id, api_url, api_token)
+        chunk_and_upload(zip_file, world_id, api_url, api_token)
     except Exception:
         print("> [bold red]Error uploading snapshot of world!")
 
@@ -147,8 +116,6 @@ def download_snapshot(
 
     if not save:
         os.remove(file_name)
-        
 
 
-
-__version__ = "0.2.0"
+__version__ = "0.3.0"

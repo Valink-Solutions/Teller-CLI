@@ -10,7 +10,7 @@ from rich.progress import Progress
 from slugify import slugify
 
 
-def chunk_and_upload_v2(file_path: str, world_id: str, url: str, token: str):
+def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     if not os.path.exists(file_path):
         raise Exception
 
@@ -61,16 +61,15 @@ def chunk_and_upload_v2(file_path: str, world_id: str, url: str, token: str):
     part = 1
 
     print("> [bold green]Starting chunked upload.")
-    
+
     progress = Progress(expand=True)
-    
+
     with progress:
         try:
             upload_task = progress.add_task(
-                f"[cyan]Uploading part: {part}...",
-                total=file_size
+                f"[cyan]Uploading part: {part}...", total=file_size
             )
-            
+
             with open(file_path, "rb") as f:
                 while finished is False:
                     if failed >= 3:
@@ -104,7 +103,7 @@ def chunk_and_upload_v2(file_path: str, world_id: str, url: str, token: str):
                     progress.update(
                         upload_task,
                         advance=chunk_size,
-                        description=f"[cyan]Uploading part: {part}..."
+                        description=f"[cyan]Uploading part: {part}...",
                     )
 
                     if current_chunk >= file_size:
@@ -114,20 +113,19 @@ def chunk_and_upload_v2(file_path: str, world_id: str, url: str, token: str):
                         print("> [bold green]All parts uploaded.")
 
         except Exception or KeyboardInterrupt as e:
-            
             if e == KeyboardInterrupt:
                 print("> [bold red]Canceled file upload, removing snapshot.")
             else:
                 print("> [bold red]Upload failed removing snapshot.")
-            
+
             progress.update(upload_task, description="[bold red]Failed.")
-            
+
             delete_response = client.delete(
                 url=f"{url}/snapshots/{snapshot.get('key')}/session/{session_id}/upload",
                 params={"name": file_name},
                 headers={"X-Space-App-Key": token},
             )
-            
+
             if delete_response.status_code != 200:
                 print(delete_response.text)
 
@@ -149,7 +147,7 @@ def chunk_and_upload_v2(file_path: str, world_id: str, url: str, token: str):
     print("> [bold green]Snapshot upload finished.")
 
 
-def compress_folder_v2(folder_path):
+def compress_folder(folder_path):
     print(f"> Finding folder '{folder_path}'")
 
     if not os.path.exists(folder_path):
@@ -224,10 +222,7 @@ def get_deep_info(world_path: str):
     except Exception as e:
         print(e)
         raise Exception
-    # json_str = json.dumps(nbtlib.serialize_tag(world_data['Data']), ensure_ascii=False)
-    # json_obj = json.loads(json_str)
 
-    # print_json(json_obj)
     print(world_data["Data"])
 
 
@@ -255,7 +250,7 @@ def grab_world(token: str, url: str, vault_id: str):
     return response.json()["key"]
 
 
-def create_world_v2(token: str, url: str, world_path: str):
+def create_world(token: str, url: str, world_path: str):
     name, seed, difficulty, vault_id = get_info(world_path)
 
     print(f"> Attempting to create new world: [cyan]{name}")
@@ -298,7 +293,6 @@ def expand_downloaded(
     snapshot_id: str,
     replace: bool = False,
 ):
-    
     try:
         _, _, _, vault_id = get_info(os.path.join(save_path, world_name))
 
@@ -312,11 +306,10 @@ def expand_downloaded(
 
     final_save_path = os.path.join(save_path, world_name)
     try:
-
         if replace:
             print("> [orange]Removing old version of world.")
             shutil.rmtree(final_save_path)
-            
+
         os.mkdir(final_save_path)
 
         shutil.unpack_archive(file_name, final_save_path, "zip")
