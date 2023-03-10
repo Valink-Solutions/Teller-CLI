@@ -1,4 +1,5 @@
 import base64
+import math
 import os
 import shutil
 import httpx
@@ -59,6 +60,8 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     current_chunk = 0
 
     part = 1
+    
+    total_parts = math.ceil(file_size/chunk_size)
 
     print("> [bold green]Starting chunked upload.")
 
@@ -67,7 +70,7 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     with progress:
         try:
             upload_task = progress.add_task(
-                f"[cyan]Uploading part: {part}...", total=file_size
+                f"[cyan]Uploading part: {part}/{total_parts}...", total=file_size
             )
 
             with open(file_path, "rb") as f:
@@ -86,13 +89,13 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
                     )
 
                     if looped_response.status_code == 208:
-                        print(f"> [bold orange]Request Failed: {looped_response.text}")
+                        print("> [bold orange]Request Failed: part already reported.")
                         current_chunk += chunk_size
                         part += 1
                         continue
 
                     if not looped_response.status_code == 200:
-                        print(f"> [bold red]Request Failed: {looped_response.text}")
+                        print("> [bold red]Request Failed: Server error occured.")
                         f.seek(0)
                         failed += 1
                         continue
@@ -103,7 +106,7 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
                     progress.update(
                         upload_task,
                         advance=chunk_size,
-                        description=f"[cyan]Uploading part: {part}...",
+                        description=f"[cyan]Uploading part: {part}/{total_parts}...",
                     )
 
                     if current_chunk >= file_size:
@@ -113,12 +116,13 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
                         print("> [bold green]All parts uploaded.")
 
         except Exception or KeyboardInterrupt as e:
+
+            progress.update(upload_task, description="[bold red]Failed.")
+            
             if e == KeyboardInterrupt:
                 print("> [bold red]Canceled file upload, removing snapshot.")
             else:
                 print("> [bold red]Upload failed removing snapshot.")
-
-            progress.update(upload_task, description="[bold red]Failed.")
 
             delete_response = client.delete(
                 url=f"{url}/snapshots/{snapshot.get('key')}/session/{session_id}/upload",
@@ -219,8 +223,7 @@ def get_deep_info(world_path: str):
     print(f"> World {world_path} found.")
     try:
         world_data = nbtlib.load(os.path.join(world_path, "level.dat"))
-    except Exception as e:
-        print(e)
+    except Exception:
         raise Exception
 
     print(world_data["Data"])
@@ -259,8 +262,7 @@ def create_world(token: str, url: str, world_path: str):
 
     try:
         icon_data = encode_icon(world_path)
-    except Exception as e:
-        print(e)
+    except Exception:
         icon_data = None
 
     response = httpx.post(
@@ -307,14 +309,20 @@ def expand_downloaded(
     final_save_path = os.path.join(save_path, world_name)
     try:
         if replace:
-            print("> [orange]Removing old version of world.")
-            shutil.rmtree(final_save_path)
+            try:
+                if os.path.exists(final_save_path):
+                    print("> [orange]Removing old version of world.")
+                    shutil.rmtree(final_save_path)
+            except Exception as e:
+                print(e)
+                raise Exception
 
         os.mkdir(final_save_path)
 
         shutil.unpack_archive(file_name, final_save_path, "zip")
 
     except Exception as e:
+        os.rmdir(final_save_path)
         print(e)
         raise Exception
 

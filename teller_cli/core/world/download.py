@@ -63,8 +63,8 @@ def from_owned(snapshot_id: str, url: str, token: str):
                 f.write(response.content)
 
             part += 1
-    except Exception as e:
-        print(e)
+    except Exception:
+        
         if os.path.exists(filename):
             print("> [bold red]Removing temp file.")
             os.remove(filename)

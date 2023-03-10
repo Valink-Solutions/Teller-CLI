@@ -63,7 +63,9 @@ def config():
     pass
 
 
-@app.command()
+@app.command(help="""
+Dumps all of the world info to the terminal. (and I mean all, It is unread-able)
+""")
 def info(world_path: str = typer.Argument(...)):
     _, _, default_saves_folder = create_or_load_config_file("teller.toml")
 
@@ -79,7 +81,12 @@ def info(world_path: str = typer.Argument(...)):
         print("> Error grabbing world info.")
 
 
-@app.command(name="download")
+@app.command(
+    name="download",
+    help="""
+Allows you to download a snapshot from either an ID or a shared URL    
+"""
+)
 def download_snapshot(
     vault_item: str = typer.Argument(...),
     save_path: Union[str, None] = typer.Argument(default=None),
@@ -118,4 +125,4 @@ def download_snapshot(
         os.remove(file_name)
 
 
-__version__ = "0.3.0"
+__version__ = "0.3.2"
