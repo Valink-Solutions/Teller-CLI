@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "teller-cli"
-version = "0.3.2"
+version = "0.3.3"
 description = ""
 authors = ["JakePIXL <jakewjevans@gmail.com>"]
 readme = "README.md"
@@ -14,6 +14,7 @@ keyring = "^23.13.1"
 nbtlib = "^2.0.4"
 nanoid = "^2.0.0"
 python-slugify = "^8.0.1"
+prompt-toolkit = "^3.0.38"
 
 [tool.poetry.scripts]
 teller-cli = "teller_cli:app"

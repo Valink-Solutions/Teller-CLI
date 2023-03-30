@@ -9,6 +9,7 @@ import zipfile
 from rich import print
 from rich.progress import Progress
 from slugify import slugify
+from prompt_toolkit.shortcuts import radiolist_dialog
 
 
 def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
@@ -70,7 +71,7 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     with progress:
         try:
             upload_task = progress.add_task(
-                f"[cyan]Uploading part: {part}/{total_parts}...", total=file_size
+                f"> [cyan]Uploading part: {part}/{total_parts}...", total=file_size
             )
 
             with open(file_path, "rb") as f:
@@ -89,7 +90,7 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
                     )
 
                     if looped_response.status_code == 208:
-                        print("> [bold orange]Request Failed: part already reported.")
+                        print("> [bold orange]Request Failed: Part already reported.")
                         current_chunk += chunk_size
                         part += 1
                         continue
@@ -106,22 +107,23 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
                     progress.update(
                         upload_task,
                         advance=chunk_size,
-                        description=f"[cyan]Uploading part: {part}/{total_parts}...",
+                        description=f"> [cyan]Uploading part: {part}/{total_parts}...",
                     )
 
                     if current_chunk >= file_size:
                         finished = True
-                        progress.update(upload_task, description="[green]Finsihed.")
+                        progress.update(upload_task, description="> [green]Finsihed.")
 
                         print("> [bold green]All parts uploaded.")
 
         except Exception or KeyboardInterrupt as e:
 
-            progress.update(upload_task, description="[bold red]Failed.")
+            progress.update(upload_task, description="> [bold red]Failed.")
             
             if e == KeyboardInterrupt:
                 print("> [bold red]Canceled file upload, removing snapshot.")
             else:
+                print(e)
                 print("> [bold red]Upload failed removing snapshot.")
 
             delete_response = client.delete(
@@ -181,7 +183,8 @@ def encode_icon(world_path: str):
     icon_path = os.path.join(world_path, "icon.png")
 
     if not os.path.exists(icon_path):
-        raise Exception
+        # raise Exception
+        icon_path = "pack.png"
 
     # Read the contents of the PNG file into a bytes object
     with open(icon_path, "rb") as f:
@@ -206,7 +209,9 @@ def get_info(world_path: str):
     seed = nbtlib.serialize_tag(world_data["Data"]["WorldGenSettings"]["seed"]).split(
         "L"
     )[0]
-    difficulty = nbtlib.serialize_tag(world_data["Data"]["Difficulty"]).split("b")[0]
+    difficulty = int(
+        nbtlib.serialize_tag(world_data["Data"]["Difficulty"]).split("b")[0]
+    ) + int(nbtlib.serialize_tag(world_data["Data"]["hardcore"]).split("b")[0])
 
     vault_id = f"{seed}-{slugify(level_name, max_length=15)}"
 
@@ -227,6 +232,8 @@ def get_deep_info(world_path: str):
         raise Exception
 
     print(world_data["Data"])
+
+    print()
 
 
 def get_folder_size(world_path: str):
@@ -329,3 +336,44 @@ def expand_downloaded(
     print("> [bold green]Finished extracting world")
 
     print("> [bold green]Happy playing :)")
+
+def get_worlds(url: str, token: str):
+    with httpx.Client() as client:
+        response = client.get(
+            f"{url}/worlds",
+            headers={"X-Space-App-Key": token}
+        )
+    return response.json()
+
+def get_snapshots(url: str, token: str, world_id: str, limit: int):
+    with httpx.Client() as client:
+        response = client.get(
+            f"{url}/worlds/{world_id}/snapshots?limit={limit}",
+            headers={"X-Space-App-Key": token}
+        )
+    return response.json()
+        
+def browse_worlds(url: str, token: str):
+    
+    worlds_data = get_worlds(url, token)
+
+    world_choice = radiolist_dialog(
+        title="Select a world",
+        values=[
+            (str(idx), item['name']) for idx, item in enumerate(worlds_data["items"])
+        ],
+    ).run()
+
+    world_id = worlds_data["items"][int(world_choice)]["key"]
+    snapshots_data = get_snapshots(url, token, world_id, 25)
+
+    snapshot_choice = radiolist_dialog(
+        title="Select a snapshot",
+        values=[
+            (str(idx), item['name']) for idx, item in enumerate(snapshots_data["items"])
+        ],
+    ).run()
+
+    user_selection = snapshots_data["items"][int(snapshot_choice)]["key"]
+    
+    return user_selection

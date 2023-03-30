@@ -2,9 +2,10 @@ import os
 from typing import Union
 import typer
 
-from teller_cli.core.config import create_or_load_config_file
+from teller_cli.core.config import create_or_load_config_file, edit_config
 from teller_cli.core.utils import check_for_shared_url
 from teller_cli.core.world import (
+    browse_worlds,
     chunk_and_upload,
     compress_folder,
     create_world,
@@ -59,8 +60,7 @@ def upload_v2(folder_path: str = typer.Argument(...)):
 
 @app.command()
 def config():
-    print("not added yet!")
-    pass
+    edit_config("teller.toml")
 
 
 @app.command(help="""
@@ -123,6 +123,43 @@ def download_snapshot(
 
     if not save:
         os.remove(file_name)
+        
+@app.command(
+    name="browse",
+    help="""
+Allows you to browse, download and delete snapshots from worlds.
+"""
+)
+def browse(
+    save_path: Union[str, None] = typer.Argument(default=None),
+    replace: Union[bool, None] = typer.Option(default=False),
+    save: Union[bool, None] = typer.Option(default=False),
+):
+    api_url, api_token, default_saves_folder = create_or_load_config_file("teller.toml")
 
+    final_save_path = save_path if save_path else default_saves_folder
+    
+    # print("> [red bold]Not implemented yet.")
+    item_id = browse_worlds(api_url, api_token)
+    
+    world_name, snapshot_id, file_name = download.from_owned(
+        snapshot_id=item_id, url=api_url, token=api_token
+    )
 
-__version__ = "0.3.2"
+    print("> Extracting snapshot into saves folder")
+
+    try:
+        expand_downloaded(
+            world_name=world_name,
+            file_name=file_name,
+            save_path=final_save_path,
+            snapshot_id=snapshot_id,
+            replace=replace,
+        )
+    except Exception:
+        print("> [bold red]Error downloading world.")
+
+    if not save:
+        os.remove(file_name)
+
+__version__ = "0.3.3"

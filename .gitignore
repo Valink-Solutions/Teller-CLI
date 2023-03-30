@@ -4,3 +4,4 @@
 teller.toml
 *.zip
 /dist
+.ruff_cache
