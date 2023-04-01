@@ -61,8 +61,8 @@ def create_or_load_config_file(config_file_path):
 
     return api_url, api_token, default_saves_folder
 
+
 def edit_config(config_file_path):
-    
     config = configparser.ConfigParser()
 
     # Check if the configuration file exists
@@ -72,21 +72,17 @@ def edit_config(config_file_path):
         create_or_load_config_file(config_file_path)
         exit()
 
-    api_url = Prompt.ask(
-        "> Enter an API url",
-        default=config["API"]["API_URL"]
-    )
+    api_url = Prompt.ask("> Enter an API url", default=config["API"]["API_URL"])
     api_token = Prompt.ask(
         "> Enter an API token [grey](leave blank to keep old token)",
         default=keyring.get_password("CHUNKVAULT_API", "TELLER_LITE_API_TOKEN"),
-        show_default=False
+        show_default=False,
     )
-    
+
     default_saves_folder = Prompt.ask(
-        "> Enter a default save location",
-        default=config["DEFAULTS"]["SAVES_FOLDER"]
+        "> Enter a default save location", default=config["DEFAULTS"]["SAVES_FOLDER"]
     )
-    
+
     keyring.set_password("CHUNKVAULT_API", "TELLER_LITE_API_TOKEN", api_token)
 
     # Update the configuration file with the user's values

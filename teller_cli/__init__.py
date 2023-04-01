@@ -63,9 +63,11 @@ def config():
     edit_config("teller.toml")
 
 
-@app.command(help="""
+@app.command(
+    help="""
 Dumps all of the world info to the terminal. (and I mean all, It is unread-able)
-""")
+"""
+)
 def info(world_path: str = typer.Argument(...)):
     _, _, default_saves_folder = create_or_load_config_file("teller.toml")
 
@@ -84,29 +86,37 @@ def info(world_path: str = typer.Argument(...)):
 @app.command(
     name="download",
     help="""
-Allows you to download a snapshot from either an ID or a shared URL    
-"""
+Allows you to download a snapshot directly via either a Snapshot ID or Share URL.
+
+Snapshot ID: up5blg49t5xt
+
+Share URL: https://example.com/public/worlds/up5blg49t5xt
+""",
 )
 def download_snapshot(
     vault_item: str = typer.Argument(...),
-    save_path: Union[str, None] = typer.Argument(default=None),
-    replace: Union[bool, None] = typer.Option(default=False),
-    save: Union[bool, None] = typer.Option(default=False),
+    save_path: Union[str, None] = typer.Argument(
+        default=None,
+        help="""
+The path where your world will be saved. (Default set in config)
+""",
+        show_default=False,
+    ),
+    replace: Union[bool, None] = typer.Option(default=False, help="Replaces old world"),
+    save: Union[bool, None] = typer.Option(default=False, help="Saves downloaded zip"),
 ):
     api_url, api_token, default_saves_folder = create_or_load_config_file("teller.toml")
 
     final_save_path = save_path if save_path else default_saves_folder
 
-    if check_for_shared_url(vault_item):
+    if not check_for_shared_url(vault_item):
         world_name, snapshot_id, file_name = download.from_owned(
             snapshot_id=vault_item, url=api_url, token=api_token
         )
     else:
-        # file_name = download.from_shared(
-        #     url=vault_item,
-        #     save_folder=final_save_path
-        # )
-        file_name = "oopsie.zip"
+        world_name, snapshot_id, file_name = download.from_shared(
+            url=vault_item,
+        )
 
     print("> Extracting snapshot into saves folder")
 
@@ -118,30 +128,38 @@ def download_snapshot(
             snapshot_id=snapshot_id,
             replace=replace,
         )
-    except Exception:
+    except Exception as e:
+        print(e)
         print("> [bold red]Error downloading world.")
 
     if not save:
         os.remove(file_name)
-        
+
+
 @app.command(
     name="browse",
     help="""
 Allows you to browse, download and delete snapshots from worlds.
-"""
+""",
 )
 def browse(
-    save_path: Union[str, None] = typer.Argument(default=None),
-    replace: Union[bool, None] = typer.Option(default=False),
-    save: Union[bool, None] = typer.Option(default=False),
+    save_path: Union[str, None] = typer.Argument(
+        default=None,
+        help="""
+The path where your world will be saved. (Default set in config)
+""",
+        show_default=False,
+    ),
+    replace: Union[bool, None] = typer.Option(default=False, help="Replaces old world"),
+    save: Union[bool, None] = typer.Option(default=False, help="Saves downloaded zip"),
 ):
     api_url, api_token, default_saves_folder = create_or_load_config_file("teller.toml")
 
     final_save_path = save_path if save_path else default_saves_folder
-    
+
     # print("> [red bold]Not implemented yet.")
     item_id = browse_worlds(api_url, api_token)
-    
+
     world_name, snapshot_id, file_name = download.from_owned(
         snapshot_id=item_id, url=api_url, token=api_token
     )
@@ -162,4 +180,5 @@ def browse(
     if not save:
         os.remove(file_name)
 
-__version__ = "0.3.3"
+
+__version__ = "0.3.4"

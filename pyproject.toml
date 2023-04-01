@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "teller-cli"
-version = "0.3.3"
+version = "0.3.4"
 description = ""
 authors = ["JakePIXL <jakewjevans@gmail.com>"]
 readme = "README.md"

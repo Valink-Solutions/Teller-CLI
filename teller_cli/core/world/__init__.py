@@ -61,8 +61,8 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
     current_chunk = 0
 
     part = 1
-    
-    total_parts = math.ceil(file_size/chunk_size)
+
+    total_parts = math.ceil(file_size / chunk_size)
 
     print("> [bold green]Starting chunked upload.")
 
@@ -117,9 +117,8 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
                         print("> [bold green]All parts uploaded.")
 
         except Exception or KeyboardInterrupt as e:
-
             progress.update(upload_task, description="> [bold red]Failed.")
-            
+
             if e == KeyboardInterrupt:
                 print("> [bold red]Canceled file upload, removing snapshot.")
             else:
@@ -185,6 +184,9 @@ def encode_icon(world_path: str):
     if not os.path.exists(icon_path):
         # raise Exception
         icon_path = "pack.png"
+
+    if not os.path.exists(icon_path):
+        raise Exception
 
     # Read the contents of the PNG file into a bytes object
     with open(icon_path, "rb") as f:
@@ -337,30 +339,29 @@ def expand_downloaded(
 
     print("> [bold green]Happy playing :)")
 
+
 def get_worlds(url: str, token: str):
     with httpx.Client() as client:
-        response = client.get(
-            f"{url}/worlds",
-            headers={"X-Space-App-Key": token}
-        )
+        response = client.get(f"{url}/worlds", headers={"X-Space-App-Key": token})
     return response.json()
+
 
 def get_snapshots(url: str, token: str, world_id: str, limit: int):
     with httpx.Client() as client:
         response = client.get(
             f"{url}/worlds/{world_id}/snapshots?limit={limit}",
-            headers={"X-Space-App-Key": token}
+            headers={"X-Space-App-Key": token},
         )
     return response.json()
-        
+
+
 def browse_worlds(url: str, token: str):
-    
     worlds_data = get_worlds(url, token)
 
     world_choice = radiolist_dialog(
         title="Select a world",
         values=[
-            (str(idx), item['name']) for idx, item in enumerate(worlds_data["items"])
+            (str(idx), item["name"]) for idx, item in enumerate(worlds_data["items"])
         ],
     ).run()
 
@@ -370,10 +371,10 @@ def browse_worlds(url: str, token: str):
     snapshot_choice = radiolist_dialog(
         title="Select a snapshot",
         values=[
-            (str(idx), item['name']) for idx, item in enumerate(snapshots_data["items"])
+            (str(idx), item["name"]) for idx, item in enumerate(snapshots_data["items"])
         ],
     ).run()
 
     user_selection = snapshots_data["items"][int(snapshot_choice)]["key"]
-    
+
     return user_selection
