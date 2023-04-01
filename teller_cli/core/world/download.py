@@ -44,50 +44,64 @@ def from_owned(snapshot_id: str, url: str, token: str):
 
     print("> [bold green]Starting chunked download.")
 
-    progress = Progress(expand=True)
+    try:
+        progress = Progress(expand=True)
 
-    with progress:
-        try:
-            download_task = progress.add_task(
-                f"> [cyan]Downloading part: {part}/{all_parts}...", total=int(all_parts)
-            )
-
-            while part <= all_parts:
-                response = client.get(
-                    url=f"{url}/snapshots/{snapshot_id}/download",
-                    params={"part": part},
-                    headers={"X-Space-App-Key": token},
-                    timeout=None,
+        with progress:
+            try:
+                download_task = progress.add_task(
+                    f"> [cyan]Downloading part: {part}/{all_parts}...",
+                    total=int(all_parts)
                 )
 
-                if response.status_code == 204:
-                    break
+                while part <= all_parts:
+                    response = client.get(
+                        url=f"{url}/snapshots/{snapshot_id}/download",
+                        params={"part": part},
+                        headers={"X-Space-App-Key": token},
+                        timeout=None,
+                    )
 
-                if not response.status_code == 200:
-                    print(f"> [bold red]Download failed: {response.text}")
-                    raise Exception
+                    if response.status_code == 204:
+                        break
 
-                with open(filename, "ab") as f:
-                    f.write(response.content)
+                    if not response.status_code == 200:
+                        print(f"> [bold red]Download failed: {response.text}")
+                        raise Exception
 
-                progress.update(
-                    download_task,
-                    advance=1,
-                    description=f"> [cyan]Downloading part: {part}/{all_parts}...",
-                )
+                    with open(filename, "ab") as f:
+                        f.write(response.content)
 
-                part += 1
-        except Exception:
-            progress.update(download_task, description="> [bold red]Failed.")
+                    progress.update(
+                        download_task,
+                        advance=1,
+                        description=f"> [cyan]Downloading part: {part}/{all_parts}...",
+                    )
 
-            if os.path.exists(filename):
-                print("> [bold red]Removing temp file.")
-                os.remove(filename)
+                    part += 1
+            except Exception:
+                progress.update(download_task, description="> [bold red]Failed.")
 
-            print("> [bold red]Please try again later.")
-            exit()
+                if os.path.exists(filename):
+                    print("> [bold red]Removing temp file.")
+                    os.remove(filename)
 
-        progress.update(download_task, description="> [green]Finsihed.")
+                print("> [bold red]Please try again later.")
+                exit()
+
+            progress.update(download_task, description="> [green]Finsihed.")
+    except KeyboardInterrupt:
+        
+        progress.update(download_task, description="> [bold red]Stopped.")
+        
+        print("> [red bold]Download Stopped.")
+
+        if os.path.exists(filename):
+            print("> [bold red]Removing temp file.")
+            os.remove(filename)
+
+        print("> [bold red]Please try again later.")
+        exit()
 
     print("> World downloaded successfully.")
 
@@ -119,49 +133,63 @@ def from_shared(url: str):
 
     print("> [bold green]Starting chunked download.")
 
-    progress = Progress(expand=True)
+    try:
+        progress = Progress(expand=True)
 
-    with progress:
-        try:
-            download_task = progress.add_task(
-                f"> [cyan]Downloading part: {part}/{all_parts}...", total=int(all_parts)
-            )
-
-            while part <= all_parts:
-                response = client.get(
-                    url=f"{base_url}/api/public/worlds/{world_id}/download",
-                    params={"part": part},
-                    timeout=None,
+        with progress:
+            try:
+                download_task = progress.add_task(
+                    f"> [cyan]Downloading part: {part}/{all_parts}...",
+                    total=int(all_parts)
                 )
 
-                if response.status_code == 204:
-                    break
+                while part <= all_parts:
+                    response = client.get(
+                        url=f"{base_url}/api/public/worlds/{world_id}/download",
+                        params={"part": part},
+                        timeout=None,
+                    )
 
-                if not response.status_code == 200:
-                    print(f"> [bold red]Download failed: {response.text}")
-                    raise Exception
+                    if response.status_code == 204:
+                        break
 
-                with open(filename, "ab") as f:
-                    f.write(response.content)
+                    if not response.status_code == 200:
+                        print(f"> [bold red]Download failed: {response.text}")
+                        raise Exception
 
-                progress.update(
-                    download_task,
-                    advance=1,
-                    description=f"> [cyan]Downloading part: {part}/{all_parts}...",
-                )
+                    with open(filename, "ab") as f:
+                        f.write(response.content)
 
-                part += 1
-        except Exception:
-            progress.update(download_task, description="> [bold red]Failed.")
+                    progress.update(
+                        download_task,
+                        advance=1,
+                        description=f"> [cyan]Downloading part: {part}/{all_parts}...",
+                    )
 
-            if os.path.exists(filename):
-                print("> [bold red]Removing temp file.")
-                os.remove(filename)
+                    part += 1
+            except Exception:
+                progress.update(download_task, description="> [bold red]Failed.")
 
-            print("> [bold red]Please try again later.")
-            exit()
+                if os.path.exists(filename):
+                    print("> [bold red]Removing temp file.")
+                    os.remove(filename)
 
-        progress.update(download_task, description="> [green]Finsihed.")
+                print("> [bold red]Please try again later.")
+                exit()
+
+            progress.update(download_task, description="> [green]Finsihed.")
+    except KeyboardInterrupt:
+        
+        progress.update(download_task, description="> [bold red]Stopped.")
+        
+        print("> [red bold]Download Stopped.")
+
+        if os.path.exists(filename):
+            print("> [bold red]Removing temp file.")
+            os.remove(filename)
+
+        print("> [bold red]Please try again later.")
+        exit()
 
     print("> World downloaded successfully.")
 

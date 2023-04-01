@@ -25,11 +25,11 @@ app = typer.Typer()
 @app.command(
     name="upload",
     help="""
-Takes a world's folder name or an absolute path to a world,
-compresses and uploads it to ChunkVault-Lite.
+Takes a world's folder name or an absolute path to a world 
+and uploads it to ChunkVault-Lite.
 """,
 )
-def upload_v2(folder_path: str = typer.Argument(...)):
+def upload(folder_path: str = typer.Argument(...)):
     api_url, api_token, default_saves_folder = create_or_load_config_file("teller.toml")
 
     if not os.path.isabs(folder_path):
@@ -58,7 +58,7 @@ def upload_v2(folder_path: str = typer.Argument(...)):
     os.remove(zip_file)
 
 
-@app.command()
+@app.command(help="Allows the user to reconfigure teller.")
 def config():
     edit_config("teller.toml")
 
@@ -181,4 +181,4 @@ The path where your world will be saved. (Default set in config)
         os.remove(file_name)
 
 
-__version__ = "0.3.4"
+__version__ = "0.3.5"
