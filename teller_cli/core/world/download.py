@@ -54,18 +54,16 @@ def from_owned(snapshot_id: str, url: str, token: str):
 
         with progress:
             download_task = progress.add_task(
-                f"> [cyan]Downloading part: {part}/{all_parts}...",
-                total=int(all_parts)
+                f"> [cyan]Downloading part: {part}/{all_parts}...", total=int(all_parts)
             )
             while finished is False:
                 try:
-                        
-                    if failed >= math.ceil(all_parts/3):
+                    if failed >= math.ceil(all_parts / 3):
                         raise Exception
-                    
+
                     if part >= all_parts:
                         finished = True
-                    
+
                     response = client.get(
                         url=f"{url}/snapshots/{snapshot_id}/download",
                         params={"part": part},
@@ -103,11 +101,10 @@ def from_owned(snapshot_id: str, url: str, token: str):
                     exit()
 
             progress.update(download_task, description="> [green]Finsihed.")
-                
+
     except KeyboardInterrupt:
-        
         progress.update(download_task, description="> [bold red]Stopped.")
-        
+
         print("> [red bold]Download Stopped.")
 
         if os.path.exists(filename):
@@ -158,17 +155,16 @@ def from_shared(url: str):
             try:
                 download_task = progress.add_task(
                     f"> [cyan]Downloading part: {part}/{all_parts}...",
-                    total=int(all_parts)
+                    total=int(all_parts),
                 )
 
                 while finished is False:
-                        
-                    if failed >= math.ceil(all_parts/3):
+                    if failed >= math.ceil(all_parts / 3):
                         raise Exception
-                    
+
                     if part >= all_parts:
                         finished = True
-                        
+
                     response = client.get(
                         url=f"{base_url}/api/public/worlds/{world_id}/download",
                         params={"part": part},
@@ -204,9 +200,8 @@ def from_shared(url: str):
 
             progress.update(download_task, description="> [green]Finsihed.")
     except KeyboardInterrupt:
-        
         progress.update(download_task, description="> [bold red]Stopped.")
-        
+
         print("> [red bold]Download Stopped.")
 
         if os.path.exists(filename):

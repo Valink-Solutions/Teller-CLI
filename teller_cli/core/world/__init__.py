@@ -76,9 +76,9 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
             upload_task = progress.add_task(
                 f"> [cyan]Uploading part: {part}/{total_parts}...", total=file_size
             )
-            
+
             while finished is False:
-                if failed >= math.ceil(total_parts/3):
+                if failed >= math.ceil(total_parts / 3):
                     raise Exception
 
                 try:
@@ -95,7 +95,7 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
                     files={"file": chunk},
                     params={"name": file_name, "part": part},
                     headers={"X-Space-App-Key": token},
-                    timeout=None
+                    timeout=None,
                 )
 
                 if looped_response.status_code == 208:
@@ -371,16 +371,16 @@ def browse_worlds(url: str, token: str):
         values=[
             (str(idx), item["name"]) for idx, item in enumerate(worlds_data["items"])
         ],
-        ok_text="Select"
+        ok_text="Select",
     ).run()
-    
+
     if not world_choice:
         print("> [yellow]No world selected.")
         exit()
 
     world_id = worlds_data["items"][int(world_choice)]["key"]
     snapshots_data = get_snapshots(url, token, world_id, 25)
-    
+
     ts = "%B, %d %Y at %I:%M%p"
 
     snapshot_choice = radiolist_dialog(
@@ -389,14 +389,15 @@ def browse_worlds(url: str, token: str):
             (
                 str(idx),
                 (
-                    f'{format_bytes(item["size"])} | ' +
-                    f'{dt.fromtimestamp(item["created_at"]).strftime(ts)}'
-                )
-            ) for idx, item in enumerate(snapshots_data["items"])
+                    f'{format_bytes(item["size"])} | '
+                    + f'{dt.fromtimestamp(item["created_at"]).strftime(ts)}'
+                ),
+            )
+            for idx, item in enumerate(snapshots_data["items"])
         ],
-        ok_text="Select"
+        ok_text="Select",
     ).run()
-    
+
     if not snapshot_choice:
         print("> [yellow]No snapshot selected.")
         exit()

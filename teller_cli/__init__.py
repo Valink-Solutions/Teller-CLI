@@ -67,7 +67,7 @@ def config():
     help="""
 Dumps all of the world info to the terminal. (and I mean all, It is unread-able)
 """,
-    hidden=True
+    hidden=True,
 )
 def info(world_path: str = typer.Argument(...)):
     _, _, default_saves_folder = create_or_load_config_file("teller.toml")
