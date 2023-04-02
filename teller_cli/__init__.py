@@ -25,8 +25,8 @@ app = typer.Typer()
 @app.command(
     name="upload",
     help="""
-Takes a world's folder name or an absolute path to a world 
-and uploads it to ChunkVault-Lite.
+Takes a world's folder name or a world's absolute path
+and uploads it.
 """,
 )
 def upload(folder_path: str = typer.Argument(...)):
@@ -58,7 +58,7 @@ def upload(folder_path: str = typer.Argument(...)):
     os.remove(zip_file)
 
 
-@app.command(help="Allows the user to reconfigure teller.")
+@app.command(help="Reconfigure teller settings.")
 def config():
     edit_config("teller.toml")
 
@@ -66,7 +66,8 @@ def config():
 @app.command(
     help="""
 Dumps all of the world info to the terminal. (and I mean all, It is unread-able)
-"""
+""",
+    hidden=True
 )
 def info(world_path: str = typer.Argument(...)):
     _, _, default_saves_folder = create_or_load_config_file("teller.toml")
@@ -86,7 +87,7 @@ def info(world_path: str = typer.Argument(...)):
 @app.command(
     name="download",
     help="""
-Allows you to download a snapshot directly via either a Snapshot ID or Share URL.
+Download a snapshot directly via either a Snapshot ID or Share URL.
 
 Snapshot ID: up5blg49t5xt
 
@@ -139,7 +140,7 @@ The path where your world will be saved. (Default set in config)
 @app.command(
     name="browse",
     help="""
-Allows you to browse, download and delete snapshots from worlds.
+Browse worlds and download snapshots.
 """,
 )
 def browse(
@@ -181,4 +182,4 @@ The path where your world will be saved. (Default set in config)
         os.remove(file_name)
 
 
-__version__ = "0.3.5"
+__version__ = "0.3.6"

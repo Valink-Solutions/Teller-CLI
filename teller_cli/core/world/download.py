@@ -1,3 +1,4 @@
+import math
 import os
 import httpx
 
@@ -44,17 +45,27 @@ def from_owned(snapshot_id: str, url: str, token: str):
 
     print("> [bold green]Starting chunked download.")
 
+    finished = False
+
+    failed = 0
+
     try:
         progress = Progress(expand=True)
 
         with progress:
-            try:
-                download_task = progress.add_task(
-                    f"> [cyan]Downloading part: {part}/{all_parts}...",
-                    total=int(all_parts)
-                )
-
-                while part <= all_parts:
+            download_task = progress.add_task(
+                f"> [cyan]Downloading part: {part}/{all_parts}...",
+                total=int(all_parts)
+            )
+            while finished is False:
+                try:
+                        
+                    if failed >= math.ceil(all_parts/3):
+                        raise Exception
+                    
+                    if part >= all_parts:
+                        finished = True
+                    
                     response = client.get(
                         url=f"{url}/snapshots/{snapshot_id}/download",
                         params={"part": part},
@@ -66,8 +77,10 @@ def from_owned(snapshot_id: str, url: str, token: str):
                         break
 
                     if not response.status_code == 200:
-                        print(f"> [bold red]Download failed: {response.text}")
-                        raise Exception
+                        print(f"> [bold red]Download failed: part {part} error.")
+                        failed += 1
+                        # raise Exception
+                        continue
 
                     with open(filename, "ab") as f:
                         f.write(response.content)
@@ -79,17 +92,18 @@ def from_owned(snapshot_id: str, url: str, token: str):
                     )
 
                     part += 1
-            except Exception:
-                progress.update(download_task, description="> [bold red]Failed.")
+                except Exception:
+                    progress.update(download_task, description="> [bold red]Failed.")
 
-                if os.path.exists(filename):
-                    print("> [bold red]Removing temp file.")
-                    os.remove(filename)
+                    if os.path.exists(filename):
+                        print("> [bold red]Removing temp file.")
+                        os.remove(filename)
 
-                print("> [bold red]Please try again later.")
-                exit()
+                    print("> [bold red]Please try again later.")
+                    exit()
 
             progress.update(download_task, description="> [green]Finsihed.")
+                
     except KeyboardInterrupt:
         
         progress.update(download_task, description="> [bold red]Stopped.")
@@ -133,6 +147,10 @@ def from_shared(url: str):
 
     print("> [bold green]Starting chunked download.")
 
+    finished = False
+
+    failed = 0
+
     try:
         progress = Progress(expand=True)
 
@@ -143,7 +161,14 @@ def from_shared(url: str):
                     total=int(all_parts)
                 )
 
-                while part <= all_parts:
+                while finished is False:
+                        
+                    if failed >= math.ceil(all_parts/3):
+                        raise Exception
+                    
+                    if part >= all_parts:
+                        finished = True
+                        
                     response = client.get(
                         url=f"{base_url}/api/public/worlds/{world_id}/download",
                         params={"part": part},

@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime as dt
 import math
 import os
 import shutil
@@ -10,6 +11,8 @@ from rich import print
 from rich.progress import Progress
 from slugify import slugify
 from prompt_toolkit.shortcuts import radiolist_dialog
+
+from teller_cli.core.utils import format_bytes
 
 
 def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
@@ -73,48 +76,53 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
             upload_task = progress.add_task(
                 f"> [cyan]Uploading part: {part}/{total_parts}...", total=file_size
             )
+            
+            while finished is False:
+                if failed >= math.ceil(total_parts/3):
+                    raise Exception
 
-            with open(file_path, "rb") as f:
-                while finished is False:
-                    if failed >= 3:
-                        raise Exception
+                try:
+                    with open(file_path, "rb") as f:
+                        f.seek(current_chunk)
+                        chunk = f.read(chunk_size)
+                except Exception:
+                    print("> [bold red]Request Failed: File operation error.")
+                    failed += 1
+                    continue
 
-                    f.seek(current_chunk)
-                    chunk = f.read(chunk_size)
+                looped_response = client.post(
+                    url=f"{url}/snapshots/{snapshot.get('key')}/session/{session_id}/upload",
+                    files={"file": chunk},
+                    params={"name": file_name, "part": part},
+                    headers={"X-Space-App-Key": token},
+                    timeout=None
+                )
 
-                    looped_response = client.post(
-                        url=f"{url}/snapshots/{snapshot.get('key')}/session/{session_id}/upload",
-                        files={"file": chunk},
-                        params={"name": file_name, "part": part},
-                        headers={"X-Space-App-Key": token},
-                    )
-
-                    if looped_response.status_code == 208:
-                        print("> [bold orange]Request Failed: Part already reported.")
-                        current_chunk += chunk_size
-                        part += 1
-                        continue
-
-                    if not looped_response.status_code == 200:
-                        print("> [bold red]Request Failed: Server error occured.")
-                        f.seek(0)
-                        failed += 1
-                        continue
-
+                if looped_response.status_code == 208:
+                    print("> [bold orange]Request Failed: Part already reported.")
                     current_chunk += chunk_size
                     part += 1
+                    continue
 
-                    progress.update(
-                        upload_task,
-                        advance=chunk_size,
-                        description=f"> [cyan]Uploading part: {part}/{total_parts}...",
-                    )
+                if not looped_response.status_code == 200:
+                    print("> [bold red]Request Failed: Server error occured.")
+                    failed += 1
+                    continue
 
-                    if current_chunk >= file_size:
-                        finished = True
-                        progress.update(upload_task, description="> [green]Finsihed.")
+                current_chunk += chunk_size
+                part += 1
 
-                        print("> [bold green]All parts uploaded.")
+                progress.update(
+                    upload_task,
+                    advance=chunk_size,
+                    description=f"> [cyan]Uploading part: {part}/{total_parts}...",
+                )
+
+                if current_chunk >= file_size:
+                    finished = True
+                    progress.update(upload_task, description="> [green]Finsihed.")
+
+                    print("> [bold green]All parts uploaded.")
 
         except Exception or KeyboardInterrupt as e:
             progress.update(upload_task, description="> [bold red]Failed.")
@@ -363,17 +371,35 @@ def browse_worlds(url: str, token: str):
         values=[
             (str(idx), item["name"]) for idx, item in enumerate(worlds_data["items"])
         ],
+        ok_text="Select"
     ).run()
+    
+    if not world_choice:
+        print("> [yellow]No world selected.")
+        exit()
 
     world_id = worlds_data["items"][int(world_choice)]["key"]
     snapshots_data = get_snapshots(url, token, world_id, 25)
+    
+    ts = "%B, %d %Y at %I:%M%p"
 
     snapshot_choice = radiolist_dialog(
         title="Select a snapshot",
         values=[
-            (str(idx), item["name"]) for idx, item in enumerate(snapshots_data["items"])
+            (
+                str(idx),
+                (
+                    f'{format_bytes(item["size"])} | ' +
+                    f'{dt.fromtimestamp(item["created_at"]).strftime(ts)}'
+                )
+            ) for idx, item in enumerate(snapshots_data["items"])
         ],
+        ok_text="Select"
     ).run()
+    
+    if not snapshot_choice:
+        print("> [yellow]No snapshot selected.")
+        exit()
 
     user_selection = snapshots_data["items"][int(snapshot_choice)]["key"]
 
