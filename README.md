@@ -11,7 +11,7 @@ Limited testing was done on MacOS 13 and Windows 10
 To use Teller-CLI, first install the tool:
 
 ```bash
-    poetry install
+    pip install teller-cli
 ```
 
 Then, run the following command to create a snapshot:
