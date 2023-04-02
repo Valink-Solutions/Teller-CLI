@@ -4,7 +4,7 @@ Teller-CLI is an open source Python/Typer-based CLI tool for uploading Minecraft
 
 ## Testing
 
-Not tested on anything other than MacOS 13.2.1.
+Limited testing was done on MacOS 13 and Windows 10
 
 ## Usage
 
@@ -14,10 +14,10 @@ To use Teller-CLI, first install the tool:
     poetry install
 ```
 
-Then, run the following command to upload a backup:
+Then, run the following command to create a snapshot:
 
 ```bash
-    teller-cli upload "/path/to/world/backup.zip"
+    teller-cli upload "/path/to/world"
 ```
 
 This will upload the specified backup to ChunkVault-Lite.
@@ -28,12 +28,10 @@ On first launch, Teller-CLI will prompt you to enter the API URL for your ChunkV
 
 After entering the API URL, Teller-CLI will prompt you to enter your API token. You can obtain this token from your ChunkVault-Lite instance. This token is required for authentication purposes and allows Teller-CLI to access your backups.
 
-<!-- Once you have entered the API URL and token, Teller-CLI will store this information locally for future use. You can update this information at any time by running the `teller-cli config` command. -->
+Once you have entered the API URL and token, Teller-CLI will store this information locally for future use. You can update this information at any time by running the `teller-cli config` command.
 
 ---
 
 ## Additional Information
 
-ChunkVault-Lite is hosted in a separate repository. For more information on ChunkVault-Lite, please visit the Valink Solutions website.
-
-For support or issues with Teller-CLI, please visit the Teller-CLI GitHub repository.
+ChunkVault-Lite is hosted in a separatly. For more information on ChunkVault-Lite visit the [Repository](https://github.com/Valink-Solutions/ChunkVault-Lite)
