@@ -297,7 +297,9 @@ def grab_world(token: str, url: str, vault_id: str):
         print(f"> [bold orange]World: {vault_id} doesnt seem to exist yet.")
         return None
 
-    return response.json()["key"]
+    json = response.json()
+
+    return json["key"], json["size"]
 
 
 def create_world(token: str, url: str, world_path: str):
@@ -435,3 +437,14 @@ def browse_worlds(url: str, token: str):
     user_selection = snapshots_data["items"][int(snapshot_choice)]["key"]
 
     return user_selection
+
+
+def update_world_size(world_id: str, world_size: int, url: str, token: str):
+    try:
+        httpx.patch(
+            url=f"{url}/worlds/{world_id}",
+            headers={"X-Space-App-Key": token},
+            json={"size": world_size},
+        )
+    except Exception:
+        pass

@@ -11,8 +11,10 @@ from teller_cli.core.world import (
     create_world,
     expand_downloaded,
     get_deep_info,
+    get_folder_size,
     get_info,
     grab_world,
+    update_world_size,
 )
 
 from rich import print
@@ -44,7 +46,7 @@ def upload(folder_path: str = typer.Argument(...)):
     except Exception as e:
         print(e)
 
-    world_id = grab_world(api_token, api_url, vault_id)
+    world_id, world_size = grab_world(api_token, api_url, vault_id)
 
     if not world_id:
         world_id = create_world(api_token, api_url, folder_path)
@@ -52,6 +54,11 @@ def upload(folder_path: str = typer.Argument(...)):
         zip_file = compress_folder(folder_path)
     except Exception:
         print("> [bold red]Error compressing world.")
+
+    new_file_size = get_folder_size(folder_path)
+
+    if new_file_size > world_size:
+        update_world_size(world_id, new_file_size, api_url, api_token)
 
     try:
         chunk_and_upload(zip_file, world_id, api_url, api_token)
@@ -184,4 +191,4 @@ The path where your world will be saved. (Default set in config)
         os.remove(file_name)
 
 
-__version__ = "0.3.7"
+__version__ = "0.3.9"
