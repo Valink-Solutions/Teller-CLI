@@ -2,6 +2,8 @@
 
 Teller-CLI is an open source Python/Typer-based CLI tool for uploading Minecraft world backups to ChunkVault-Lite, an open source backup solution provided by Valink Solutions.
 
+Checkout the [Technical Write-Up](https://dev.to/valink/crafting-robust-minecraft-backup-tools-a-deep-dive-into-chunkvault-lite-and-teller-cli-16d1) which explains how Teller-CLI works and how to install it.
+
 ## Testing
 
 Limited testing was done on MacOS 13 and Windows 10
