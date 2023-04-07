@@ -372,6 +372,18 @@ files = [
 ]
 
 [[package]]
+name = "nanoid-dictionary"
+version = "2.4.0"
+description = "Predefined character sets to be used with Nano ID"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "nanoid-dictionary-2.4.0.tar.gz", hash = "sha256:9bf3030de971e5c30cabc4684d81ed7c4c17acfd730324d795bca9b29b8a8f04"},
+    {file = "nanoid_dictionary-2.4.0-py3-none-any.whl", hash = "sha256:ca493cfdb9832c98554459e2a765510cc0f2f83d8abd366a9bdad1cf44492db1"},
+]
+
+[[package]]
 name = "nbtlib"
 version = "2.0.4"
 description = "A python package to read and edit nbt data"
@@ -640,4 +652,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8d5fa7fe23a1c83cc62bce01eaeaeaad63a92d4cb86f0d19ea51de0da8f1ab3a"
+content-hash = "082ec1d8a2fc46dbf8bf20a12538a8f099910f6e8822d702d671265388eb6a0b"

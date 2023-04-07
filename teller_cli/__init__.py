@@ -39,7 +39,10 @@ def upload(folder_path: str = typer.Argument(...)):
         print("> [bold red]World does not exist.")
         raise Exception
 
-    _, _, _, vault_id = get_info(folder_path)
+    try:
+        _, _, _, vault_id = get_info(folder_path)
+    except Exception as e:
+        print(e)
 
     world_id = grab_world(api_token, api_url, vault_id)
 
@@ -158,7 +161,6 @@ The path where your world will be saved. (Default set in config)
 
     final_save_path = save_path if save_path else default_saves_folder
 
-    # print("> [red bold]Not implemented yet.")
     item_id = browse_worlds(api_url, api_token)
 
     world_name, snapshot_id, file_name = download.from_owned(
@@ -182,4 +184,4 @@ The path where your world will be saved. (Default set in config)
         os.remove(file_name)
 
 
-__version__ = "0.3.6"
+__version__ = "0.3.7"

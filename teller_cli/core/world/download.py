@@ -4,7 +4,6 @@ import httpx
 
 from rich import print
 from rich.progress import Progress
-import slugify
 from urllib.parse import urlparse
 
 
@@ -213,4 +212,4 @@ def from_shared(url: str):
 
     print("> World downloaded successfully.")
 
-    return world["name"], f"{world['seed']}-{slugify.slugify(world['name'])}", filename
+    return world["name"], world_id, filename

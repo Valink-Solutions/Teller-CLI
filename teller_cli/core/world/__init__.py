@@ -1,15 +1,20 @@
 import base64
 from datetime import datetime as dt
+import json
 import math
 import os
 import shutil
 import httpx
+from nanoid import generate
+from nanoid_dictionary import uppercase, numbers
 import nbtlib
 import zipfile
 
 from rich import print
 from rich.progress import Progress
-from slugify import slugify
+from rich.prompt import Confirm
+
+# from slugify import slugify
 from prompt_toolkit.shortcuts import radiolist_dialog
 
 from teller_cli.core.utils import format_bytes
@@ -25,9 +30,17 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
 
     file_size = os.path.getsize(file_path)
 
-    file_name = os.path.basename(file_path)
+    if file_size >= 2147483648:
+        print("> [red bold]This world is greater than 2gb and should not be uploaded!")
+        cont_question = Confirm.ask("> Do you want to continue?")
 
-    # num_parts = math.ceil(file_size / chunk_size)
+        if not cont_question:
+            print("> [red bold]Exitting.")
+            os.remove(file_path)
+            exit()
+        print("> [yellow]Your in for the long haul champ.")
+
+    file_name = os.path.basename(file_path)
 
     snapshot_response = client.post(
         url=f"{url}/snapshots",
@@ -106,6 +119,7 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
 
                 if not looped_response.status_code == 200:
                     print("> [bold red]Request Failed: Server error occured.")
+                    print(looped_response.text())
                     failed += 1
                     continue
 
@@ -124,7 +138,7 @@ def chunk_and_upload(file_path: str, world_id: str, url: str, token: str):
 
                     print("> [bold green]All parts uploaded.")
 
-        except Exception or KeyboardInterrupt as e:
+        except Exception as e:
             progress.update(upload_task, description="> [bold red]Failed.")
 
             if e == KeyboardInterrupt:
@@ -176,22 +190,24 @@ def compress_folder(folder_path):
     # Create a zip file for the folder
     zip_filename = folder_name + ".zip"
 
-    with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
-        # Add all files in the folder to the zip file
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                zipf.write(file_path, os.path.relpath(file_path, folder_path))
+    try:
+        with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
+            # Add all files in the folder to the zip file
+            for root, dirs, files in os.walk(folder_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    zipf.write(file_path, os.path.relpath(file_path, folder_path))
+    except Exception:
+        try:
+            os.remove(zip_filename)
+        except Exception:
+            pass
 
     return zip_filename
 
 
 def encode_icon(world_path: str):
     icon_path = os.path.join(world_path, "icon.png")
-
-    if not os.path.exists(icon_path):
-        # raise Exception
-        icon_path = "pack.png"
 
     if not os.path.exists(icon_path):
         raise Exception
@@ -223,9 +239,23 @@ def get_info(world_path: str):
         nbtlib.serialize_tag(world_data["Data"]["Difficulty"]).split("b")[0]
     ) + int(nbtlib.serialize_tag(world_data["Data"]["hardcore"]).split("b")[0])
 
-    vault_id = f"{seed}-{slugify(level_name, max_length=15)}"
+    if os.path.exists(os.path.join(world_path, ".chunkvault-lite")):
+        try:
+            with open(os.path.join(world_path, ".chunkvault-lite"), "r") as f:
+                json_data = json.loads(f.read())
+        except Exception:
+            raise Exception
 
-    # print(f"World Vault ID: {vault_id}")
+        vault_id = json_data["ID"]
+
+    else:
+        vault_id = generate(uppercase + numbers)
+
+        try:
+            with open(os.path.join(world_path, ".chunkvault-lite"), "w") as f:
+                f.write(json.dumps({"ID": vault_id}))
+        except Exception:
+            raise Exception
 
     return level_name, seed, difficulty, vault_id
 
