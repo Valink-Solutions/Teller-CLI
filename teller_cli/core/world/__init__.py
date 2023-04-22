@@ -295,7 +295,7 @@ def grab_world(token: str, url: str, vault_id: str):
 
     if not response.status_code == 200:
         print(f"> [bold orange]World: {vault_id} doesnt seem to exist yet.")
-        return None
+        return None, None
 
     json = response.json()
 

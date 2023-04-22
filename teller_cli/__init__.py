@@ -57,8 +57,9 @@ def upload(folder_path: str = typer.Argument(...)):
 
     new_file_size = get_folder_size(folder_path)
 
-    if new_file_size > world_size:
-        update_world_size(world_id, new_file_size, api_url, api_token)
+    if world_size:
+        if new_file_size > world_size:
+            update_world_size(world_id, new_file_size, api_url, api_token)
 
     try:
         chunk_and_upload(zip_file, world_id, api_url, api_token)
@@ -191,4 +192,4 @@ The path where your world will be saved. (Default set in config)
         os.remove(file_name)
 
 
-__version__ = "0.3.9"
+__version__ = "0.3.10"
